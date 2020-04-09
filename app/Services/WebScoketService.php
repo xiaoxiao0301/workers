@@ -26,6 +26,7 @@ class WebScoketService implements WebSocketHandlerInterface
     {
         // 在触发 WebSocket 连接建立事件之前，Laravel 应用初始化的生命周期已经结束，你可以在这里获取 Laravel 请求和会话数据
         Log::info('WebSocket连接建立, Client Id: '. $request->fd);
+        app('swoole')->wsTable->set('fd'. $request->fd, ['value' => $request->fd]);
         $server->push($request->fd, 'Welcome to WebSocket Server built on LaravelS');
     }
 
@@ -36,7 +37,13 @@ class WebScoketService implements WebSocketHandlerInterface
      */
     public function onMessage(Server $server, Frame $frame)
     {
-        $server->push($frame->fd, 'This is a message sent from WebSocket Server'. date('Y-m-d H:i:s'));
+        foreach (app('swoole')->wsTable as $k => $row) {
+            if (strpos($k, 'fd') === 0 && $server->exist($row['value'])) {
+                Log::info('Receive message from client:'. $row['value']);
+                $server->push($frame->fd, 'This is a message sent from WebSocket Server'. date('Y-m-d H:i:s'));
+            }
+        }
+
     }
 
     /**

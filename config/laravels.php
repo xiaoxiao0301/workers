@@ -47,7 +47,17 @@ return [
         ],
         'max_wait_time' => 5, // Max waiting time of reloading
     ],
-    'swoole_tables'            => [],
+    'swoole_tables'            => [
+        // 表名, 会加上Table后缀
+        'ws' => [
+            'size' => 102400,
+            'column' => [
+                // 字段名称 value
+                ['name' => 'value', 'type' => \Swoole\Table::TYPE_INT, 'size' => 8]
+            ]
+        ]
+        // 可以有多个表定义
+    ],
     'register_providers'       => [],
     'cleaners'                 => [
         // See LaravelS's built-in cleaners: https://github.com/hhxsv5/laravel-s/blob/master/Settings.md#cleaners
