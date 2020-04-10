@@ -7,7 +7,7 @@ return [
     'listen_ip'                => env('LARAVELS_LISTEN_IP', '127.0.0.1'),
     'listen_port'              => env('LARAVELS_LISTEN_PORT', 5200),
     'socket_type'              => defined('SWOOLE_SOCK_TCP') ? SWOOLE_SOCK_TCP : 1,
-    'enable_coroutine_runtime' => false,
+    'enable_coroutine_runtime' => false, // 一键协程化
     'server'                   => env('LARAVELS_SERVER', 'LaravelS'),
     'handle_static'            => env('LARAVELS_HANDLE_STATIC', false),
     'laravel_base_path'        => env('LARAVEL_BASE_PATH', base_path()),
@@ -34,6 +34,11 @@ return [
         //    'pipe'     => 0 // The type of pipeline, 0: no pipeline 1: SOCK_STREAM 2: SOCK_DGRAM
         //    'enable'   => true // Whether to enable, default true
         //],
+        [
+            'class'    =>  \App\Processes\TestProcess::class,
+            'redirect' => false,
+            'pipe' => 0
+        ],
     ],
     'timer'                    => [
         'enable'        => env('LARAVELS_TIMER', false),
@@ -89,7 +94,7 @@ return [
         'reload_async'       => true,
         'max_wait_time'      => 60,
         'enable_reuse_port'  => true,
-        'enable_coroutine'   => false,
+        'enable_coroutine'   => env('SWOOLE_ENABLE_COROUTINE', false), // 在 LaravelS 代码中启用 Swoole 协程。
         'http_compression'   => false,
         // 每隔 60s 检测一次所有连接，如果某个连接在 600s 内都没有发送任何数据，则关闭该连接
         'heartbeat_idle_time' => 600,
