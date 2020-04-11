@@ -14,6 +14,17 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+
+Route::get('/test', function () {
+    return response()->json(['msg' => 'test'], 200);
+});
+
+
+Route::post('/register', 'AuthController@register');
+Route::post('/login', 'AuthController@login');
+
+
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
+
