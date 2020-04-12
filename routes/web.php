@@ -16,3 +16,18 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/test', function () {
+   return 'test';
+});
+
+Route::get('/register', function () {
+   $data = [
+       'name' => 'user1',
+       'email' => 'user1@qq.com',
+       'password' => Hash::make('123456')
+   ];
+
+   $user = \App\User::create($data);
+   return $user;
+});
