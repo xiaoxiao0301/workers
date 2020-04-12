@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -19,39 +20,42 @@ class AuthController extends Controller
     public function register(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name' => ['required', 'string', 'max:25'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'string', 'min:6']
+            'name' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'password' => ['required', 'string', 'min:6'],
+            'src' => 'bail|active_url|max:255'
         ], [
-            'name.required' => '用户名必须!',
-            'name.string' => '用户名必须是字符!',
-            'name.max' => '用户名不能超过25个字符!',
-            'email.required' => '邮箱必须!',
-            'email.email' => '邮箱格式不正确!',
-            'email.string' => '邮箱必须是字符格式!',
-            'email.max' => '邮箱长度不超过255个字符!',
-            'email.unique' => '邮箱已存在!',
+
+            'name.required' => '邮箱必须!',
+            'name.email' => '邮箱格式不正确!',
+            'name.string' => '邮箱必须是字符格式!',
+            'name.max' => '邮箱长度不超过255个字符!',
+            'name.unique' => '邮箱已存在!',
             'password.required' => '密码必须!',
             'password.min' => '密码最少6位数字!',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['message' => $validator, 'status' => -1], 422);
+            return response()->json(['message' => $validator->errors()->first(), 'status' => -1], 422);
         }
 
-        $data = [
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ];
-
-        $user = User::create($data);
-
-        if ($user) {
-            return response()->json(['message' => '注册成功!', 'status' => 1], 201);
-        } else {
-            return response()->json(['message' => '注册失败!', 'status' => -1], 423);
+        // 在数据库中创建用户并返回
+        $email = $request->name;
+        try {
+            $user = User::create([
+                'name' => substr($email, 0, strpos($email, '@')),
+                'email' => $email,
+                'avatar' => $request->src,
+                'password' => Hash::make($request->password),
+            ]);
+            if ($user) {
+                return response()->json(['message' => '注册成功!', 'status' => 1, 'data' => $user], 201);
+            } else {
+                return response()->json(['message' => '注册失败!', 'status' => -1], 423);
+            }
+        } catch (QueryException $exception) {
+            return response()->json(['message' => '注册失败!', 'status' => -1, 'data' => '保存用户到数据库异常：' . $exception->getMessage()], 423);
         }
+
     }
 
     /**
@@ -91,5 +95,15 @@ class AuthController extends Controller
             return response()->json(['message' => 'UnAuthorised', 'status' => -1], 401);
         }
 
+    }
+
+
+    public function logout()
+    {
+        if (Auth::check()) {
+            Auth::user()->token()->delete();
+        }
+
+        return response()->json(['message' => 'Logout', 'status' => 1], 204);
     }
 }
