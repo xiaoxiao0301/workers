@@ -16,3 +16,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+// GatewayWorkerServer
+Route::get('/ws', 'WechatController@ws');
+
+
+Route::get('/wechat', 'WechatController@index');
