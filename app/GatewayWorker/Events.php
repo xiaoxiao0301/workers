@@ -40,7 +40,16 @@ class Events
         switch ($messageData['type']) {
             case 'bind':
                 Gateway::bindUid($client_id, $messageData['fromid']);
-                return;
+                break;
+            case 'online':
+                $fromid = $messageData['fromid'];
+                $toid = $messageData['toid'];
+                $status = Gateway::isUidOnline($toid);
+                Gateway::sendToUid($fromid, json_encode([
+                    'type' => 'online',
+                    'status' => $status
+                ]));
+                break;
             case 'ping':
                 echo '正常检测';
                 return;
@@ -57,14 +66,14 @@ class Events
                 ];
                 // 判度是否在线
                 if (Gateway::isUidOnline($toid)) {
-                    Gateway::sendToUid($toid, json_encode($data));
                     $data['isread'] = 1;
+                    Gateway::sendToUid($toid, json_encode($data));
                 } else {
                     $data['isread'] = 0;
                 }
                 $data['type'] = 'save';
                 Gateway::sendToUid($fromid, json_encode($data));
-                return;
+                break;
         }
 
     }

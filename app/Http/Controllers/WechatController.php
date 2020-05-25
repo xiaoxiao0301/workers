@@ -63,6 +63,47 @@ class WechatController extends Controller
         }
     }
 
+
+    public function message(Request $request)
+    {
+        if ($request->ajax()) {
+            $data = $request->all();
+            $count = ChatMessage::where('fromid', $data['fromid'])
+                ->where('toid', $data['toid'])
+                ->orWhere(function ($query) use($data) {
+                    $query->where('fromid', $data['toid'])
+                        ->where('toid', $data['fromid']);
+                })
+                ->count();
+            // 记录多余10条取最后10条，否则全部取出来
+            if ($count > 10) {
+                $message = ChatMessage::where('fromid', $data['fromid'])
+                    ->where('toid', $data['toid'])
+                    ->orWhere(function ($query) use($data) {
+                        $query->where('fromid', $data['toid'])
+                            ->where('toid', $data['fromid']);
+                    })
+                    ->offset($count-10)
+                    ->limit(10)
+                    ->orderBy('id')
+                    ->get();
+            } else {
+                $message = ChatMessage::where('fromid', $data['fromid'])
+                    ->where('toid', $data['toid'])
+                    ->orWhere(function ($query) use($data) {
+                        $query->where('fromid', $data['toid'])
+                            ->where('toid', $data['fromid']);
+                    })
+                    ->orderBy('id')
+                    ->get();
+            }
+
+            return $message;
+        }
+
+    }
+
+
     /**
      * 根据uid返回用户信息
      *

@@ -79,6 +79,17 @@
                 var bind = '{"type":"bind", "fromid":"'+fromid+'"}';
                 ws.send(bind);
                 getHeadImg(fromid, toid);
+                messageInit(fromid, toid);
+                // 初始化判断用户是否在线
+                var online = '{"type": "online", "toid":"'+toid+'", "fromid":"'+fromid+'"}';
+                ws.send(online);
+                break;
+            case 'online':
+                if (message.status ==1) {
+                    $(".shop-online").text("在线");
+                } else {
+                    $(".shop-online").text("离线");
+                }
                 break;
             case 'text':
                 if (message.fromid == toid) {
@@ -86,11 +97,17 @@
                         '                <span class="char-img" style="background-image: url('+to_head+')"></span>\n' +
                         '                <span class="text"><i class="icon icon-sanjiao4 t-32"></i>'+message.data+'</span>\n' +
                         '                </div>');
+                    $(".chat-content").scrollTop(3000);
                 }
                 break;
             // 消息持久化存储
             case 'save':
                 saveMessage(message);
+                if(message.isread == 1) {
+                    $(".shop-online").text("在线");
+                } else {
+                    $(".shop-online").text("离线");
+                }
                 break;
         }
     };
@@ -102,6 +119,7 @@
             '                <span class="text"><i class="icon icon-sanjiao3 t-32"></i>'+text+'</span>\n' +
             '                <span class="char-img" style="background-image: url('+from_head+')"></span>\n' +
             '                </div>');
+        $(".chat-content").scrollTop(3000);
         ws.send(message);
         $(".send-input").val('');
     });
@@ -133,6 +151,34 @@
                 from_name = data.from_name;
                 to_name = data.to_name;
                 $(".shop-titlte").text(to_name);
+            }
+        });
+    }
+
+    // 聊天记录初始化
+    function messageInit(fromid, toid) {
+        $.ajax({
+            url: "{{ url('/message') }}",
+            type: "post",
+            data: {
+                'fromid': fromid,
+                'toid': toid
+            },
+            success: function (data) {
+                $.each(data, function (index, content) {
+                    if(fromid == content.fromid) {
+                        $(".chat-content").append('  <div class="chat-text section-right flex">\n' +
+                            '                <span class="text"><i class="icon icon-sanjiao3 t-32"></i>'+content.content+'</span>\n' +
+                            '                <span class="char-img" style="background-image: url('+from_head+')"></span>\n' +
+                            '                </div>');
+                    } else {
+                        $(".chat-content").append('    <div class="chat-text section-left flex">\n' +
+                            '                <span class="char-img" style="background-image: url('+to_head+')"></span>\n' +
+                            '                <span class="text"><i class="icon icon-sanjiao4 t-32"></i>'+content.content+'</span>\n' +
+                            '                </div>');
+                    }
+                });
+                $(".chat-content").scrollTop(3000);
             }
         });
     }

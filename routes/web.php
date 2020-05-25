@@ -23,5 +23,7 @@ Route::get('/ws', 'WechatController@ws');
 Route::post('/save', 'WechatController@saveMessage');
 // 获取头像和昵称
 Route::post('/avatar', 'WechatController@getInfo');
+// 获取聊天信息
+Route::post('/message', 'WechatController@message');
 
 Route::get('/tt', 'WechatController@index');
