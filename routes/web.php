@@ -25,5 +25,7 @@ Route::post('/save', 'WechatController@saveMessage');
 Route::post('/avatar', 'WechatController@getInfo');
 // 获取聊天信息
 Route::post('/message', 'WechatController@message');
+// 文件上传
+Route::post('/file', 'WechatController@file');
 
 Route::get('/tt', 'WechatController@index');

@@ -42,6 +42,7 @@
         <div class="fix-send flex footer-bar">
             <i class="icon icon-emoji1 t-50"></i>
             <input class="send-input t-28" maxlength="200">
+            <input type="file" name="file" id="file" style="display: none">
             <i class="icon icon-add t-50" style="color: #888;"></i>
             <span class="send-btn">发送</span>
         </div>
@@ -62,6 +63,7 @@
     var to_head = '';
     var from_name = '';
     var to_name = '';
+    var online = 0;
 
     var ws =  new WebSocket("ws://127.0.0.1:9000");
 
@@ -86,8 +88,10 @@
                 break;
             case 'online':
                 if (message.status ==1) {
+                    online = 1;
                     $(".shop-online").text("在线");
                 } else {
+                    online = 0;
                     $(".shop-online").text("离线");
                 }
                 break;
@@ -100,18 +104,30 @@
                     $(".chat-content").scrollTop(3000);
                 }
                 break;
+            case 'img':
+                if(message.fromid == toid) {
+                    $(".chat-content").append('  <div class="chat-text section-left flex">\n' +
+                        '                <span class="char-img" style="background-image: url('+to_head+')"></span>\n' +
+                        '                <span class="text"><i class="icon icon-sanjiao3 t-32"></i><img src="'+message.data+'" width="120" height="120"></span>\n' +
+                        '                </div>');
+                    $(".chat-content").scrollTop(3000);
+                }
+                break;
             // 消息持久化存储
             case 'save':
                 saveMessage(message);
                 if(message.isread == 1) {
+                    online = 1;
                     $(".shop-online").text("在线");
                 } else {
+                    online = 0;
                     $(".shop-online").text("离线");
                 }
                 break;
         }
     };
 
+    // 发送文字信息
     $(".send-btn").click(function () {
         var text = $(".send-input").val();
         var message = '{"type":"text", "data":"'+text+'", "fromid":"'+fromid+'", "toid":"'+toid+'"}';
@@ -124,12 +140,53 @@
         $(".send-input").val('');
     });
 
+    // 发送图片信息
+    $(".icon-add").click(function () {
+        $("#file").click();
+    });
+
+    $("#file").change(function () {
+        var fileLists = $("#file")[0].files[0];
+        var formData = new FormData();
+        formData.append('fromid', fromid);
+        formData.append('toid', toid);
+        formData.append('online', online);
+        formData.append('file', fileLists);
+
+        $.ajax({
+            url: "{{ url('/file') }}",
+            type: "post",
+            cache: false,
+            dataType: "json",
+            data: formData,
+            processData: false, // 禁止转对象
+            contentType: false, // 默认urlencode
+            success: function (data, status, xhr) {
+                if(data.status == 1) {
+                    $(".chat-content").append('  <div class="chat-text section-right flex">\n' +
+                        '                <span class="text"><i class="icon icon-sanjiao3 t-32"></i><img src="'+data.path+'" width="120" height="120"></span>\n' +
+                        '                <span class="char-img" style="background-image: url('+from_head+')"></span>\n' +
+                        '                </div>');
+                    $(".chat-content").scrollTop(3000);
+                    // 解决不能发送同一张图片
+                    $("#file").val('');
+                    message = '{"fromid":"'+fromid+'", "toid":"'+toid+'", "type":"img", "data":"'+data.path+'"}';
+                    ws.send(message);
+                } else {
+                    console.log(data.msg);
+                }
+            }
+
+        });
+    });
+
     // 持久化信息
     function saveMessage(data) {
         $.ajax({
             url:"{{url('/save')}}",
             type:"post",
             data: data,
+            dataType: "json",
             success: function (data) {
                 console.log(data);
             }
@@ -141,6 +198,7 @@
         $.ajax({
             url: "{{ url('/avatar') }}",
             type: "post",
+            dataType: "json",
             data: {
                 "fromid": fromid,
                 "toid": toid
@@ -160,6 +218,7 @@
         $.ajax({
             url: "{{ url('/message') }}",
             type: "post",
+            dataType: "json",
             data: {
                 'fromid': fromid,
                 'toid': toid
@@ -167,15 +226,35 @@
             success: function (data) {
                 $.each(data, function (index, content) {
                     if(fromid == content.fromid) {
-                        $(".chat-content").append('  <div class="chat-text section-right flex">\n' +
-                            '                <span class="text"><i class="icon icon-sanjiao3 t-32"></i>'+content.content+'</span>\n' +
+                        var strPreffix = '  <div class="chat-text section-right flex">\n' +
+                            '                <span class="text"><i class="icon icon-sanjiao3 t-32"></i>';
+                        var strEnd = '</span>\n' +
                             '                <span class="char-img" style="background-image: url('+from_head+')"></span>\n' +
-                            '                </div>');
+                            '                </div>';
+                        switch (content.type) {
+                            case 1:
+                                strPreffix += content.content;
+                                break;
+                            case 2:
+                                strPreffix += '<img src="storage/'+content.content+'" width="120" height="120">'
+                                break;
+                        }
+                        $(".chat-content").append(strPreffix+strEnd);
                     } else {
-                        $(".chat-content").append('    <div class="chat-text section-left flex">\n' +
+                        var strPreffix = '<div class="chat-text section-left flex">\n' +
                             '                <span class="char-img" style="background-image: url('+to_head+')"></span>\n' +
-                            '                <span class="text"><i class="icon icon-sanjiao4 t-32"></i>'+content.content+'</span>\n' +
-                            '                </div>');
+                            '                <span class="text"><i class="icon icon-sanjiao4 t-32"></i>';
+                        var strEnd = '</span>\n' +
+                            '                </div>';
+                        switch (content.type) {
+                            case 1:
+                                strPreffix += content.content;
+                                break;
+                            case 2:
+                                strPreffix += '<img src="storage/'+content.content+'" width="120" height="120">'
+                                break;
+                        }
+                        $(".chat-content").append(strPreffix+strEnd);
                     }
                 });
                 $(".chat-content").scrollTop(3000);
