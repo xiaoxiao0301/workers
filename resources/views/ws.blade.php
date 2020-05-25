@@ -4,6 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="format-detection" content="telephone=no" />
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>沟通中</title>
     <link rel="stylesheet" type="text/css" href="{{ asset('wechat/css/themes.css?v=2017129') }}">
     <link rel="stylesheet" type="text/css" href="{{ asset('wechat/css/h5app.css') }}">
@@ -26,15 +27,15 @@
                 <p style="display: none;text-align: center;padding-top: 0.5rem" id="more"><a>加载更多</a></p>
                 <p class="chat-time"><span class="time">2017-11-12</span></p>
 
-                <div class="chat-text section-left flex">
-                <span class="char-img" style="background-image: url({{ asset('wechat/img/123.jpg') }})"></span>
-                <span class="text"><i class="icon icon-sanjiao4 t-32"></i>你好</span>
-                </div>
+{{--                <div class="chat-text section-left flex">--}}
+{{--                <span class="char-img" style="background-image: url({{ asset('wechat/img/123.jpg') }})"></span>--}}
+{{--                <span class="text"><i class="icon icon-sanjiao4 t-32"></i>你好</span>--}}
+{{--                </div>--}}
 
-                <div class="chat-text section-right flex">
-                <span class="text"><i class="icon icon-sanjiao3 t-32"></i>你好</span>
-                <span class="char-img" style="background-image: url({{ asset('wechat/img/132.jpg') }})"></span>
-                </div>
+{{--                <div class="chat-text section-right flex">--}}
+{{--                <span class="text"><i class="icon icon-sanjiao3 t-32"></i>你好</span>--}}
+{{--                <span class="char-img" style="background-image: url({{ asset('wechat/img/132.jpg') }})"></span>--}}
+{{--                </div>--}}
 
             </div>
         </div>
@@ -48,12 +49,100 @@
 </div>
 
 <script>
+    $(function () {
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
+        });
+    })
+    var fromid = {{ $fromid }};
+    var toid = {{ $toid }};
+    var from_head = '';
+    var to_head = '';
+    var from_name = '';
+    var to_name = '';
+
     var ws =  new WebSocket("ws://127.0.0.1:9000");
 
-    ws.onmessage = function(e){
+    ws.onopen = function(e) {
         console.log(e);
+    };
+
+
+
+    ws.onmessage = function(e){
+        var message = eval("("+e.data+")");
+        switch (message.type) {
+            // 将用户id与生成的client_id绑定
+            case 'init':
+                var bind = '{"type":"bind", "fromid":"'+fromid+'"}';
+                ws.send(bind);
+                getHeadImg(fromid, toid);
+                break;
+            case 'text':
+                if (message.fromid == toid) {
+                    $(".chat-content").append('    <div class="chat-text section-left flex">\n' +
+                        '                <span class="char-img" style="background-image: url('+to_head+')"></span>\n' +
+                        '                <span class="text"><i class="icon icon-sanjiao4 t-32"></i>'+message.data+'</span>\n' +
+                        '                </div>');
+                }
+                break;
+            // 消息持久化存储
+            case 'save':
+                saveMessage(message);
+                break;
+        }
+    };
+
+    $(".send-btn").click(function () {
+        var text = $(".send-input").val();
+        var message = '{"type":"text", "data":"'+text+'", "fromid":"'+fromid+'", "toid":"'+toid+'"}';
+        $(".chat-content").append('  <div class="chat-text section-right flex">\n' +
+            '                <span class="text"><i class="icon icon-sanjiao3 t-32"></i>'+text+'</span>\n' +
+            '                <span class="char-img" style="background-image: url('+from_head+')"></span>\n' +
+            '                </div>');
+        ws.send(message);
+        $(".send-input").val('');
+    });
+
+    // 持久化信息
+    function saveMessage(data) {
+        $.ajax({
+            url:"{{url('/save')}}",
+            type:"post",
+            data: data,
+            success: function (data) {
+                console.log(data);
+            }
+        });
     }
 
+    // 获取头像昵称
+    function getHeadImg(fromid, toid) {
+        $.ajax({
+            url: "{{ url('/avatar') }}",
+            type: "post",
+            data: {
+                "fromid": fromid,
+                "toid": toid
+            },
+            success: function (data) {
+                from_head = data.from_head;
+                to_head = data.to_head;
+                from_name = data.from_name;
+                to_name = data.to_name;
+                $(".shop-titlte").text(to_name);
+            }
+        });
+    }
+
+    // 心跳检测,线上开启
+    // setInterval(checHeart, 20000);
+    // function checHeart() {
+    //     var check = '{"type":"ping","data":"heart beat\n"}';
+    //     ws.send(check);
+    // }
 
 </script>
 </body>

@@ -19,6 +19,9 @@ Route::get('/', function () {
 
 // GatewayWorkerServer
 Route::get('/ws', 'WechatController@ws');
+// 保存文本信息
+Route::post('/save', 'WechatController@saveMessage');
+// 获取头像和昵称
+Route::post('/avatar', 'WechatController@getInfo');
 
-
-Route::get('/wechat', 'WechatController@index');
+Route::get('/tt', 'WechatController@index');
