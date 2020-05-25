@@ -9,9 +9,17 @@
     <link rel="stylesheet" type="text/css" href="{{ asset('wechat/css/themes.css?v=2017129') }}">
     <link rel="stylesheet" type="text/css" href="{{ asset('wechat/css/h5app.css') }}">
     <link rel="stylesheet" type="text/css" href="{{ asset('wechat/fonts/iconfont.css?v=2016070717') }}">
-    <script src="{{ asset('wechat/js/jquery.min.js') }}"></script>
+{{--    <script src="{{ asset('wechat/js/jquery.min.js') }}"></script>--}}
     <script src="{{ asset('wechat/js/dist/flexible/flexible_css.debug.js') }}"></script>
     <script src="{{ asset('wechat/js/dist/flexible/flexible.debug.js') }}"></script>
+    <script src="{{ asset('qqFace/js/jquery.min.js') }}"></script>
+    <script src="{{ asset('qqFace/js/jquery.qqFace.js') }}"></script>
+    <style>
+        .qqFace { margin-top: -401px; background: #fff; padding: 2px; border: 1px #dfe6f6 solid; }
+        .qqFace table td { padding: 0px; }
+        .qqFace table td img { cursor: pointer; border: 1px #fff solid; width: 100%}
+        .qqFace table td img:hover { border: 1px #0066cc solid; }
+    </style>
 </head>
 <body ontouchstart>
 <div class='fui-page-group'>
@@ -41,7 +49,7 @@
         </div>
         <div class="fix-send flex footer-bar">
             <i class="icon icon-emoji1 t-50"></i>
-            <input class="send-input t-28" maxlength="200">
+            <input class="send-input t-28" maxlength="200" id="saytext">
             <input type="file" name="file" id="file" style="display: none">
             <i class="icon icon-add t-50" style="color: #888;"></i>
             <span class="send-btn">发送</span>
@@ -56,7 +64,39 @@
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
             }
         });
-    })
+
+        // qq表情
+        $('.icon-emoji1').qqFace({
+
+            assign:'saytext',
+
+            path:'/qqFace/arclist/'	//表情存放的路径
+
+        });
+
+        // $(".sub_btn").click(function(){
+        //
+        //     var str = $("#saytext").val();
+        //
+        //     $("#show").html(replace_em(str));
+        //
+        // });
+    });
+
+    //查看结果
+    function replace_em(str){
+
+        str = str.replace(/\</g,'&lt;');
+
+        str = str.replace(/\>/g,'&gt;');
+
+        str = str.replace(/\n/g,'<br/>');
+
+        str = str.replace(/\[em_([0-9]*)\]/g,'<img src="/qqFace/arclist/$1.gif" border="0" style="width: 51px;"/>');
+
+        return str;
+
+    }
     var fromid = {{ $fromid }};
     var toid = {{ $toid }};
     var from_head = '';
@@ -99,7 +139,7 @@
                 if (message.fromid == toid) {
                     $(".chat-content").append('    <div class="chat-text section-left flex">\n' +
                         '                <span class="char-img" style="background-image: url('+to_head+')"></span>\n' +
-                        '                <span class="text"><i class="icon icon-sanjiao4 t-32"></i>'+message.data+'</span>\n' +
+                        '                <span class="text"><i class="icon icon-sanjiao4 t-32"></i>'+replace_em(message.data)+'</span>\n' +
                         '                </div>');
                     $(".chat-content").scrollTop(3000);
                 }
@@ -132,7 +172,7 @@
         var text = $(".send-input").val();
         var message = '{"type":"text", "data":"'+text+'", "fromid":"'+fromid+'", "toid":"'+toid+'"}';
         $(".chat-content").append('  <div class="chat-text section-right flex">\n' +
-            '                <span class="text"><i class="icon icon-sanjiao3 t-32"></i>'+text+'</span>\n' +
+            '                <span class="text"><i class="icon icon-sanjiao3 t-32"></i>'+replace_em(text)+'</span>\n' +
             '                <span class="char-img" style="background-image: url('+from_head+')"></span>\n' +
             '                </div>');
         $(".chat-content").scrollTop(3000);
@@ -233,7 +273,7 @@
                             '                </div>';
                         switch (content.type) {
                             case 1:
-                                strPreffix += content.content;
+                                strPreffix += replace_em(content.content);
                                 break;
                             case 2:
                                 strPreffix += '<img src="storage/'+content.content+'" width="120" height="120">'
@@ -248,7 +288,7 @@
                             '                </div>';
                         switch (content.type) {
                             case 1:
-                                strPreffix += content.content;
+                                strPreffix += replace_em(content.content);
                                 break;
                             case 2:
                                 strPreffix += '<img src="storage/'+content.content+'" width="120" height="120">'
