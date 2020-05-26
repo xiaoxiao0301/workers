@@ -56,7 +56,7 @@
         var message = eval("("+e.data+")");
         switch (message.type) {
             case 'init':
-                // messageList();
+                messageList();
                 var bind = '{"type":"bind", "fromid":"'+fromid+'"}';
                 ws.send(bind);
                 break;
@@ -80,7 +80,6 @@
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
             }
         });
-        messageList();
     });
 
     // 消息列表

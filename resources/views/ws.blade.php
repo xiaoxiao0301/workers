@@ -64,7 +64,6 @@
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
             }
         });
-
         // qq表情
         $('.icon-emoji1').qqFace({
 
@@ -74,13 +73,6 @@
 
         });
 
-        // $(".sub_btn").click(function(){
-        //
-        //     var str = $("#saytext").val();
-        //
-        //     $("#show").html(replace_em(str));
-        //
-        // });
     });
 
     //查看结果
@@ -122,6 +114,9 @@
                 ws.send(bind);
                 getHeadImg(fromid, toid);
                 messageInit(fromid, toid);
+                // 数据信息存储数据时所有都设置为未读状态，在进入聊天界面时改变状态设置为已读
+                // 改变信息的状态
+                changUnRead();
                 // 初始化判断用户是否在线
                 var online = '{"type": "online", "toid":"'+toid+'", "fromid":"'+fromid+'"}';
                 ws.send(online);
@@ -142,6 +137,8 @@
                         '                <span class="text"><i class="icon icon-sanjiao4 t-32"></i>'+replace_em(message.data)+'</span>\n' +
                         '                </div>');
                     $(".chat-content").scrollTop(3000);
+                    // 修改信息状态
+                    changUnRead();
                 }
                 break;
             case 'img':
@@ -151,6 +148,8 @@
                         '                <span class="text"><i class="icon icon-sanjiao3 t-32"></i><img src="'+message.data+'" width="120" height="120"></span>\n' +
                         '                </div>');
                     $(".chat-content").scrollTop(3000);
+                    // 修改信息状态
+                    changUnRead();
                 }
                 break;
             // 消息持久化存储
@@ -300,6 +299,23 @@
                 $(".chat-content").scrollTop(3000);
             }
         });
+    }
+
+    // 数据信息存储数据时所有都设置为未读状态，在进入聊天界面时改变状态设置为已读
+    function changUnRead() {
+        $.ajax({
+            url: "{{ url('/readMessage') }}",
+            type: "post",
+            dataType: "json",
+            data: {
+                "fromid": fromid,
+                "toid": toid,
+            },
+            success: function (data) {
+                console.log(data);
+            }
+        });
+
     }
 
     // 心跳检测,线上开启

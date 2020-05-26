@@ -37,7 +37,8 @@ class WechatController extends Controller
                 'toid' => $data['toid'],
                 'toname' => $this->getUserName($data['toid']),
                 'content' => $data['data'],
-                'isread' => $data['isread'],
+//                'isread' => $data['isread'],
+                'isread' => 0,
                 'type' => 1,
             ];
 
@@ -144,7 +145,8 @@ class WechatController extends Controller
         $data['toid'] = $toid;
         $data['toname'] = $this->getUserName($toid);
         $data['content'] = $path;
-        $data['isread'] = $isread;
+//        $data['isread'] = $isread;
+        $data['isread'] = 0;
         $data['type'] = 2;
         $message = ChatMessage::create($data);
         if ($message) {
@@ -202,6 +204,21 @@ class WechatController extends Controller
             return $rows;
         }
     }
+
+    /**
+     * 改变用户消息的状态
+     *
+     * @param Request $request
+     */
+    public function readMessage(Request $request)
+    {
+        if($request->ajax()) {
+            $formid = $request->fromid;
+            $toid = $request->toid;
+            ChatMessage::where('fromid', $toid)->where('toid', $formid)->update(['isread' => 1]);
+        }
+    }
+
 
     /**
      * 根据uid返回用户信息

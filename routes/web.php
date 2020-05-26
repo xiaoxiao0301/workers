@@ -32,4 +32,7 @@ Route::post('/file', 'WechatController@file');
 Route::get('/list', 'WechatController@list');
 // 获取用户聊天列表
 Route::post('/userMessage', 'WechatController@userMessage');
+// 修改信息的状态
+Route::post('/readMessage', 'WechatController@readMessage');
+
 Route::get('/tt', 'WechatController@index');
