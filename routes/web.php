@@ -18,6 +18,7 @@ Route::get('/', function () {
 });
 
 // GatewayWorkerServer
+// 点对点聊天界面
 Route::get('/ws', 'WechatController@ws');
 // 保存文本信息
 Route::post('/save', 'WechatController@saveMessage');
@@ -27,5 +28,8 @@ Route::post('/avatar', 'WechatController@getInfo');
 Route::post('/message', 'WechatController@message');
 // 文件上传
 Route::post('/file', 'WechatController@file');
-
+// 聊天列表页面
+Route::get('/list', 'WechatController@list');
+// 获取用户聊天列表
+Route::post('/userMessage', 'WechatController@userMessage');
 Route::get('/tt', 'WechatController@index');

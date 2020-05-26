@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ChatMessage;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class WechatController extends Controller
@@ -160,6 +161,49 @@ class WechatController extends Controller
     }
 
     /**
+     * 聊天列表页面
+     *
+     * @param Request $request
+     * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\View\View
+     */
+    public function list(Request $request)
+    {
+        $fromid = $request->get('fromid', 1);
+        return view('wechat.list', compact('fromid'));
+    }
+
+    /**
+     * 根据fromid获取聊天信息
+     *
+     * @param Request $request
+     */
+    public function userMessage(Request $request)
+    {
+        if ($request->ajax()) {
+            $fromid = $request->fromid;
+            $messageInfo = ChatMessage::where('toid', $fromid)
+                // any_value 解决 only_full_group sql_mode 问题
+                ->select(DB::raw("fromid, any_value(toid) as toid, any_value(fromname) as fromname"))
+//                ->select(['fromid', 'toid', 'fromname'])
+                ->groupBy('fromid')
+                ->get();
+
+            $rows = array_map(function ($res) {
+                return [
+                    'headUrl' => $this->getHeaderImg($res['fromid']),
+                    'userName' => $res['fromname'],
+                    // 未读消息
+                    'unreadCount' => $this->getUnReadCount($res['fromid'], $res['toid']),
+                    'lastMessage' => $this->getLastListMessage($res['fromid'], $res['toid']),
+                    'chatPage' => url('/ws?fromid='.$res['toid'].'&toid='.$res['fromid'])
+                ];
+            }, $messageInfo->toArray());
+
+            return $rows;
+        }
+    }
+
+    /**
      * 根据uid返回用户信息
      *
      * @param string $userid
@@ -170,4 +214,48 @@ class WechatController extends Controller
         $name = User::find($userid);
         return $name->name;
     }
+
+    /**
+     * 根据uid获取用户的头像地址
+     *
+     * @param $fromid
+     * @return string
+     */
+    private function getHeaderImg($userid)
+    {
+        $user = User::find($userid);
+        return $user->avatar;
+    }
+
+    /**
+     * 根据fromid和toid获取fromid未读的消息数
+     * @param $fromid
+     * @param $toid
+     */
+    private function getUnReadCount($fromid, $toid)
+    {
+        return ChatMessage::where('fromid', $fromid)->where('toid', $toid)->where('isread', 0)->select(['id'])->count();
+    }
+
+    /**
+     * 获取最后一条消息
+     *
+     * @param $fromid
+     * @param $toid
+     * @return mixed
+     */
+    private function getLastListMessage($fromid, $toid)
+    {
+        $message = ChatMessage::where('fromid', $fromid)->where('toid', $toid)
+            ->orWhere(function ($query) use($fromid, $toid) {
+                $query->where('fromid', $toid)
+                    ->where('toid', $fromid);
+            })
+            ->orderBy('id', 'desc')->limit(1)->first()->toArray();
+        $message['created_at'] = strtotime($message['created_at']);
+        $message['updated_at'] = strtotime($message['updated_at']);
+        return $message;
+    }
+
+
 }
